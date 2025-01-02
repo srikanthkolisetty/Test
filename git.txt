@@ -61,4 +61,4 @@ to clear every thing in stash area the command we can use => git stash clear
 pull request in github is nothing but merge request in gitlab
 
 ===
-
+stash1
