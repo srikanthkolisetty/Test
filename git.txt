@@ -1,0 +1,61 @@
+
+git log - it gives details about all commits of a branch
+
+git log -2 --> log information about last two commits
+
+git checkout -b branchname
+
+git cherry-pick commitid
+
+HEAD -> current branch last commit
+
+Head -> other branch last commit
+
+git show :filename -> used to show the file that is present in staging area.
+
+git show HEAD:filename -> shows the file that is at it last commit.
+
+git reset filename -> used to unstage a file
+
+git restore filename -> restore the file with the last commit changes any new changes which are not yet committed will be removed
+
+git show HEAD:filename -> shows the content of file at that commit (latest commit)
+
+
+git show HEAD~1:filename -> shows the content of file at that commit (latest commit-1 s commit)
+
+git revert commithashcode -> reverts the commit and that operation is mades as a commit
+
+
+We can change the commit message if it is not pushed to repository, below is the command used to change the commit message.
+git commit --amend -> it gives the choice to modify the last commit message
+
+
+git checkout -b newbranchname currentbranchname -> creates a new branch, for suppose if we are at specific commit in master branch and then we exected this checkout 
+command then this will create a new branch with all the changes present in master branch
+
+
+git branch -> gives the list of branches present
+
+---------------------
+git checkout feature
+				=> the feature branch merges with master. Feature branch changes master remains same.
+git merge master
+----------------
+
+
+stash changes are first in last out.
+
+we can do git stash many times and when we do pop the stash changes then we get the last stashed change which means it follows first in last out.
+
+
+To see list of stash changes the command is => git stash list
+
+git stash drop stash@{n} where n is the number of the stash change.
+
+
+to clear every thing in stash area the command we can use => git stash clear
+
+
+
+pull request in github is nothing but merge request in gitlab
