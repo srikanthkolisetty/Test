@@ -62,6 +62,10 @@ pull request in github is nothing but merge request in gitlab
 
 ===
 the end
+<<<<<<< Updated upstream
 stash1
 ===the end
 stash2
+=======
+stash1
+>>>>>>> Stashed changes
