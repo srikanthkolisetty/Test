@@ -1,0 +1,18 @@
+Rate of change is called as time complexity 
+
+
+Two rules to keep in mind while deciding the time complexity
+
+	1. avoid constants
+	2.consider the worst case
+
+Time complexity is the number of operations needed to run an algorithm on large amounts of data.
+space complexity = auxiliary space + input space
+
+and the input space is ignored from the above so totally space complexity = auxiliary space
+
+auxiliary space is the amount of space that code uses (excluding input variables)
+
+basic hashing -46:36 hash array concept and treemap,unordered map
+
+
