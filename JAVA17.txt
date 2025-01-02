@@ -1,0 +1,47 @@
+Record class:
+
+	To reduce the boilerplate code.
+
+By writing record class it internally writes the equals,hashcode and toString method and 
+as well as private final fields and public constructors (Compiler includes all these)
+
+To create a record class we use a keyword called record.
+
+We can also have static fields, static methods and also custom constructors, custom methods.
+
+Record class cannot extend anyother class.
+
+Sealed classes and interfaces
+===================
+
+When we want our class to be inherited by only certain classes then one can make use of this feature.
+
+A class that extends  a sealed class must be either non sealed class or sealed class or a final class.
+
+An interface that extends a sealed interface must be either a sealed interface or a non sealed interface.
+
+Premits is the keyword which is used to permit the inheritance of sealed class to certain other classes.
+
+A sealed class can also extend any other class. 
+
+A sealed class must have a sub class
+
+
+non-sealed class B extends SealedExample
+{
+
+}
+
+
+public sealed class SealedExample extends Thread implements Cloneable permits B {
+}
+
+
+
+
+Switch
+===
+
+Switch can be used as expression
+break keyword is no more needed in switch if we use -> syntax
+  
