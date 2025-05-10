@@ -1,0 +1,2258 @@
+package com.jsonmapping;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class JsonPathMapperRegexEnhanced {
+
+    public static String mapJsonPaths(String inputJson, Map<String, String> pathMappings) {
+        Map<String, String> extractedValues = new HashMap<>();
+
+        // Extract values from source paths using regex
+        for (Map.Entry<String, String> entry : pathMappings.entrySet()) {
+            String sourcePath = entry.getKey();
+            String targetPath = entry.getValue();
+            String value = extractValueFromPath(inputJson, sourcePath);
+            if (value != null) {
+                extractedValues.put(targetPath, value);
+            }
+        }
+
+        // Construct new JSON from extracted values
+        String outputJson = constructJsonFromPaths(extractedValues);
+        return outputJson;
+    }
+
+    private static String extractValueFromPath(String json, String path) {
+        String regex = buildRegexForPath(path);
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(json);
+
+        if (matcher.find()) {
+            return matcher.group(1); // Extract the matched value
+        }
+        return null; // Return null if no match is found
+    }
+
+    private static String buildRegexForPath(String path) {
+        // Build regex for given JSON path
+        String[] parts = path.split("\\.");
+        StringBuilder regexBuilder = new StringBuilder();
+
+        for (String part : parts) {
+            if (part.contains("[")) {
+                // Array index handling
+                String fieldName = part.substring(0, part.indexOf("["));
+                String index = part.substring(part.indexOf("[") + 1, part.indexOf("]"));
+                regexBuilder.append("\"").append(Pattern.quote(fieldName)).append("\"\\s*:\\s*\\[");
+                if (index.equals("*")) {
+                    regexBuilder.append(".*?");
+                } else {
+                    regexBuilder.append("(?:\\{.*?\\}|\".*?\"|\\d+|true|false|null|\\[.*?\\]){").append(index).append("}");
+                }
+                regexBuilder.append("\\]");
+            } else {
+                // Normal field handling
+                regexBuilder.append("\"").append(Pattern.quote(part)).append("\"");
+            }
+            regexBuilder.append("\\s*:\\s*");
+        }
+
+        // Match the value (strings, numbers, booleans, null, arrays, or objects)
+        regexBuilder.append("(\".*?\"|\\d+|true|false|null|\\[.*?\\]|\\{.*?\\})");
+        return regexBuilder.toString();
+    }
+
+    private static String constructJsonFromPaths(Map<String, String> extractedValues) {
+        StringBuilder jsonBuilder = new StringBuilder();
+        jsonBuilder.append("{");
+
+        for (Map.Entry<String, String> entry : extractedValues.entrySet()) {
+            String targetPath = entry.getKey();
+            String value = entry.getValue();
+
+            // Split the target path and construct nested JSON structure
+            String[] parts = targetPath.split("\\.");
+            StringBuilder nestedJson = new StringBuilder();
+            for (int i = 0; i < parts.length; i++) {
+                nestedJson.append("\"").append(parts[i]).append("\":");
+                if (i == parts.length - 1) {
+                    nestedJson.append(value);
+                } else {
+                    nestedJson.append("{");
+                }
+            }
+            for (int i = 1; i < parts.length; i++) {
+                nestedJson.append("}");
+            }
+
+            // Merge nested JSON into the main JSON
+            if (jsonBuilder.length() > 1) {
+                jsonBuilder.append(",");
+            }
+            jsonBuilder.append(nestedJson);
+        }
+
+        jsonBuilder.append("}");
+        return jsonBuilder.toString();
+    }
+
+    public static void main(String[] args) {
+
+        Map<String, String> pathMappings = new HashMap<>();
+        pathMappings.put("subscriptionInfos[*]", "output.firstPrice");
+        pathMappings.put("subscriptionInfos[*].offer.group.identity.prices[1]", "output.secondPrice");
+
+        String outputJson = mapJsonPaths(getJsonDataAsString(), pathMappings);
+        System.out.println(outputJson);
+    }
+    private static String getJsonDataAsString() {
+        return """
+                {
+                     	"subscriptionInfos": [
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		},
+                     		{
+                     			"group": {
+                     				"groupId": 695114934,
+                     				"groupType": "BUNDLE",
+                     				"subscriptionState": "ACTIVE",
+                     				"billingSystem": "CEB",
+                     				"countryOfResidence": "US"
+                     			},
+                     			"products": [
+                     				{
+                     					"productName": "Online",
+                     					"productCode": "prod10004",
+                     					"subscriptionId": 695114938,
+                     					"marketplaceId": "ci3469019154"
+                     				}
+                     			],
+                     			"identity": {
+                     				"customerId": "3983093d-ca78-4e01-a9fc-356e2fdfe0fc"
+                     			},
+                     			"offer": {
+                     				"offerCode": "21700076",
+                     				"description": "MIG WSJ CNYR- xdef 54- 52 wk Offer",
+                     				"brand": "WSJ",
+                     				"currencyCode": "USD",
+                     				"autoRenew": "Y",
+                     				"group": {
+                     					"groupId": 1234,
+                     					"groupType": "SINGLE",
+                     					"subscriptionState": "active",
+                     					"billingSystem": "BRM",
+                     					"countryOfResidence": "US",
+                     					"identity": {
+                     						"email": "srikanth.kolisetty@dowjones.com",
+                     						"prices": [
+                     							1,
+                     							2,
+                     							3,
+                     							4,
+                     							5,
+                     							6,
+                     							7,
+                     							8,
+                     							9,
+                     							11,
+                     							12,
+                     							13,
+                     							14,
+                     							15,
+                     							16,
+                     							17
+                     						]
+                     					}
+                     				}
+                     			},
+                     			"cancelInfo": {
+                     				"cancelledTime": "2023/09/25T10:59:42",
+                     				"cancelReason": "Too Expensive"
+                     			},
+                     			"orders": [
+                     				{
+                     					"orderNumber": "o62003107",
+                     					"orderCreationDate": "2014/10/09T11:39:29",
+                     					"orderStatus": "SUCCEEDED",
+                     					"orderType": "CREATED",
+                     					"source": "CAJ"
+                     				}
+                     			],
+                     			"metadata": {
+                     				"isAutoRenew": "Y",
+                     				"isSchool": "N",
+                     				"isGift": "N",
+                     				"isDonor": "N",
+                     				"isCorporate": "N",
+                     				"isActive": "Y",
+                     				"isCancelled": "N",
+                     				"isPaused": "N",
+                     				"isReactivationEligible": "N"
+                     			},
+                     			"terms": [
+                     				{
+                     					"termDuration": "P12M",
+                     					"validityPeriod": {
+                     						"startTime": "2024/04/03T00:00:00",
+                     						"endTime": "2025/05/09T23:59:59"
+                     					},
+                     					"termType": "PAID",
+                     					"price": {
+                     						"amount": 119,
+                     						"currency": "USD"
+                     					},
+                     					"purchaseState": "PURCHASE_SUCCESS",
+                     					"segmentInfo": {
+                     						"segmentName": "WSJ_DIGITALPACKAGE",
+                     						"communicationVariation": "Variation2",
+                     						"segmentIntent": "MARKER",
+                     						"markerCount": 3
+                     					},
+                     					"paymentCount": 3,
+                     					"metadata": {
+                     						"currentTerm": "Y",
+                     						"renewalTerm": "N",
+                     						"latestPurchasedTerm": "Y",
+                     						"prevPriceTerm": "N"
+                     					}
+                     				}
+                     			]
+                     		}
+                     	]
+                     }
+                """;
+    }
+}
